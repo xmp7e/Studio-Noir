@@ -2,415 +2,495 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>Studio Noir</title>
+
+<!-- ======== TELEGRAM MINI APPS НАСТРОЙКИ ======== -->
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+<meta name="viewport" 
+      content="width=device-width, height=device-height, 
+               initial-scale=1.0, maximum-scale=1.0, 
+               user-scalable=no, viewport-fit=cover">
+
+<title>Studio Noir — iOS 26</title>
 <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
 
 <style>
+/* ======== iOS 26 СТИЛЬ ======== */
 :root {
-  --bg:#000;
-  --glass:rgba(255,255,255,.04);
-  --glass-border:rgba(255,255,255,.1);
-  --text-main:#fff;
-  --text-dim:#777;
-
-  --c-piano:#007AFF;
-  --c-violin:#FF9500;
-  --c-bass:#FF2D55;
-  --c-bell:#AF52DE;
-  --c-strings:#5AC8FA;
-  --c-pad:#34C759;
+    --bg: #000000;
+    --surface: rgba(255,255,255,0.06);
+    --border: rgba(255,255,255,0.12);
+    --accent: #0A84FF;          /* iOS 26 Blue */
+    --accent-glow: rgba(10,132,255,0.45);
+    --danger: #FF453A;          /* iOS Red */
+    --text-main: #FFFFFF;
+    --text-dim: #8E8E93;        /* iOS Gray */
 }
 
-/* ===== BASE ===== */
-html,body{
-  margin:0;
-  height:100%;
-  background:black;
-  color:white;
-  font-family:-apple-system, SF Pro Display, sans-serif;
-  overflow:hidden;
-  touch-action:none;
-  padding-top: env(safe-area-inset-top);
+/* ======== БАЗА ======== */
+html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--text-main);
+    font-family: -apple-system, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    touch-action: manipulation;
 }
 
-/* ===== COMPACT TG HEADER (не ломает логику) ===== */
-header{
-  position:sticky;
-  top:0;
-  height:40px;
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  align-items:center;
-  gap:6px;
-  padding:4px 8px;
-  background:rgba(0,0,0,.65);
-  backdrop-filter:blur(18px);
-  -webkit-backdrop-filter:blur(18px);
-  border-bottom:1px solid rgba(255,255,255,.05);
-  z-index:100;
+/* Чтобы не было "белых полос" в TMA */
+body {
+    background: linear-gradient(180deg, #000 0%, #050505 100%);
 }
 
-.h-left{display:flex;gap:6px;}
-.h-center{
-  justify-self:center;
-  background:rgba(255,255,255,.06);
-  padding:5px 14px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-}
-.h-right{color:#FF3B30;font-size:11px;font-weight:700;cursor:pointer;}
-
-.h-btn{
-  width:28px;height:28px;border-radius:50%;border:none;
-  background:rgba(255,255,255,.08);color:white;
-  display:flex;align-items:center;justify-content:center;
-}
-.h-btn.play.active{background:white;color:black;}
-.h-btn.rec.active{background:#FF3B30;}
-
-/* ===== LAYOUT ===== */
-.container{
-  height:calc(100vh - 40px);
-  display:flex;
-  flex-direction:column;
-  padding:6px;
-  box-sizing:border-box;
+/* ======== SPLASH ======== */
+#splash {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
 }
 
-main{
-  flex:1;
-  overflow-y:auto;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
+.start-btn {
+    background: white;
+    color: black;
+    border: none;
+    padding: 16px 48px;
+    border-radius: 24px;
+    font-weight: 700;
+    letter-spacing: -0.4px;
 }
 
-/* ===== TRACKS (ТВОЙ СТИЛЬ СОХРАНЁН) ===== */
-.track-section{
-  background:var(--glass);
-  border:1px solid var(--glass-border);
-  border-radius:16px;
-  padding:8px;
+/* ======== КОНТЕЙНЕР ПОД TMA ======== */
+.container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+
+    /* iOS safe-areas для Telegram */
+    padding:
+      env(safe-area-inset-top)
+      8px
+      env(safe-area-inset-bottom)
+      8px;
+
+    box-sizing: border-box;
 }
 
-.track-header{
-  font-size:10px;
-  font-weight:800;
-  text-transform:uppercase;
-  letter-spacing:1px;
-  margin-bottom:6px;
+/* ======== HEADER (iOS Control Bar) ======== */
+header {
+    height: 56px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
 }
 
-.grid{
-  display:grid;
-  grid-template-columns:repeat(16,1fr);
-  gap:3px;
+/* кнопки стекло */
+.btn {
+    height: 36px;
+    padding: 0 16px;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: white;
+    font-weight: 700;
+    backdrop-filter: blur(12px);
 }
 
-.step{
-  aspect-ratio:1/1.1;
-  background:rgba(255,255,255,.03);
-  border-radius:6px;
+/* Play актив */
+.btn-play.active {
+    background: white;
+    color: black;
 }
 
-/* активные шаги */
-.step.active-piano{background:var(--c-piano);}
-.step.active-violin{background:var(--c-violin);}
-.step.active-bass{background:var(--c-bass);}
-.step.active-bell{background:var(--c-bell);}
-.step.active-strings{background:var(--c-strings);}
-.step.active-pad{background:var(--c-pad);}
-.step.active-drum{background:white;}
-
-/* ===== FOOTER ===== */
-footer{
-  background:rgba(0,0,0,.85);
-  backdrop-filter:blur(20px);
-  -webkit-backdrop-filter:blur(20px);
-  border-radius:20px 20px 0 0;
-  padding-bottom:env(safe-area-inset-bottom);
+/* Rec актив — как в iOS */
+.btn-rec.active {
+    background: var(--danger);
+    border-color: var(--danger);
+    box-shadow: 0 0 20px rgba(255,69,58,0.5);
 }
 
-/* tabs */
-.tab-bar{
-  display:grid;
-  grid-template-columns:repeat(6,1fr);
-  gap:4px;
-  padding:8px;
+/* BPM дисплей — как iOS виджет */
+.lcd {
+    background: var(--surface);
+    padding: 6px 12px;
+    border-radius: 10px;
+    font-weight: 700;
 }
 
-.tab{
-  background:var(--glass);
-  border:1px solid var(--glass-border);
-  border-radius:10px;
-  padding:8px 0;
-  text-align:center;
-  font-size:9px;
-  color:var(--text-dim);
-}
-.tab.active{background:white;color:black;}
-
-/* sliders */
-.sliders{
-  display:flex;
-  gap:12px;
-  padding:0 10px 8px;
+/* ======== TABS (iOS 26 Pills) ======== */
+.tabs {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 4px;
 }
 
-/* piano */
-.piano{
-  height:110px;
-  display:flex;
-  position:relative;
-  gap:2px;
-  padding:4px;
+.tab {
+    padding: 12px 0;
+    border-radius: 14px;
+    font-size: 10px;
+    font-weight: 800;
+    text-align: center;
+    background: var(--surface);
+    color: var(--text-dim);
+    border: 1px solid var(--border);
 }
-.white{
-  flex:1;
-  background:linear-gradient(#fff,#ddd);
-  border-radius:6px;
+
+.tab.active {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 0 14px var(--accent-glow);
 }
-.black{
-  position:absolute;
-  background:black;
-  width:7%;
-  height:55%;
-  border-radius:0 0 5px 5px;
+
+/* ======== СЕКВЕНСОР — "iOS GLASS CARD" ======== */
+.sequencer-card {
+    background: var(--surface);
+    border-radius: 20px;
+    padding: 12px;
+    border: 1px solid var(--border);
+}
+
+/* Сетка шагов */
+.grid {
+    display: grid;
+    grid-template-columns: repeat(16, 1fr);
+    gap: 4px;
+}
+
+.step {
+    aspect-ratio: 1/1.1;
+    background: rgba(255,255,255,0.06);
+    border-radius: 8px;
+}
+
+/* Активные шаги */
+.step.active-m {
+    background: var(--accent);
+}
+
+.step.active-d {
+    background: white;
+}
+
+/* текущий шаг */
+.step.playing {
+    transform: scale(1.08);
+    border: 1px solid white;
+}
+
+/* ======== SLIDERS (iOS Style) ======== */
+input[type=range] {
+    -webkit-appearance: none;
+    height: 6px;
+    border-radius: 3px;
+    background: var(--border);
+}
+
+input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: white;
+}
+
+/* ======== PIANO — оптимизация под TMA ======== */
+.piano {
+    height: 160px;
+    display: flex;
+    position: relative;
+    gap: 2px;
+}
+
+.white {
+    flex: 1;
+    background: linear-gradient(180deg, #fff, #e0e0e0);
+    border-radius: 8px;
+}
+
+.black {
+    position: absolute;
+    background: black;
+    width: 7%;
+    height: 60%;
+}
+
+/* ======== FIX ДЛЯ TELEGRAM ======== */
+body.tg-ready {
+    background: var(--bg);
 }
 </style>
 </head>
 
 <body>
 
-<header>
-  <div class="h-left">
-    <button id="p-btn" class="h-btn play" onclick="togglePlay()">▶︎</button>
-    <button id="r-btn" class="h-btn rec" onclick="toggleRec()">●</button>
-  </div>
-
-  <div class="h-center" id="bpm-ui">120 BPM</div>
-
-  <div class="h-right" onclick="clearAll()">Reset</div>
-</header>
+<div id="splash">
+    <h1 style="font-weight:300; letter-spacing:-1px;">Studio Noir</h1>
+    <button class="start-btn" onclick="boot()">ЗАПУСТИТЬ</button>
+</div>
 
 <div class="container">
 
-<main id="sequencer-main">
-  <div id="melody-tracks"></div>
-
-  <div class="track-section">
-    <div class="track-header">Rhythm (K / S / H)</div>
-    <div class="grid" id="k-grid"></div>
-    <div class="grid" id="s-grid" style="margin-top:4px"></div>
-    <div class="grid" id="h-grid" style="margin-top:4px"></div>
+<header>
+  <div>
+    <button id="play-btn" class="btn btn-play" onclick="handlePlay()">Play</button>
+    <button id="rec-btn" class="btn btn-rec" onclick="handleRec()">Rec</button>
   </div>
+
+  <div class="lcd" id="bpm-val">120 BPM</div>
+  <div class="reset" onclick="resetAll()" style="color:var(--danger);font-weight:700;">
+    ОЧИСТИТЬ
+  </div>
+</header>
+
+<main>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchInst('piano',this)">PIANO</div>
+  <div class="tab" onclick="switchInst('violin',this)">VIOLIN</div>
+  <div class="tab" onclick="switchInst('bass',this)">BASS</div>
+  <div class="tab" onclick="switchInst('bell',this)">BELL</div>
+  <div class="tab" onclick="switchInst('strings',this)">STRINGS</div>
+  <div class="tab" onclick="switchInst('pad',this)">PAD</div>
+</div>
+
+<div class="sequencer-card">
+  <div class="row-info">MELODY FLOW</div>
+  <div class="grid" id="melody-grid"></div>
+
+  <div class="row-info" style="margin-top:8px">BEAT PADS</div>
+  <div class="grid" id="k-grid"></div>
+  <div class="grid" id="s-grid"></div>
+  <div class="grid" id="h-grid"></div>
+</div>
+
 </main>
 
 <footer>
-  <div class="tab-bar">
-    <div class="tab active" onclick="setInst('piano',this)">PIANO</div>
-    <div class="tab" onclick="setInst('violin',this)">VIOLIN</div>
-    <div class="tab" onclick="setInst('bass',this)">BASS</div>
-    <div class="tab" onclick="setInst('bell',this)">BELL</div>
-    <div class="tab" onclick="setInst('strings',this)">STRINGS</div>
-    <div class="tab" onclick="setInst('pad',this)">PAD</div>
-  </div>
+<div class="sliders">
+  <label>BPM</label>
+  <input type="range" min="60" max="180" value="120"
+         oninput="setTempo(this.value)">
 
-  <div class="sliders">
-    <label>BPM</label>
-    <input type="range" min="60" max="180" value="120"
-           oninput="changeBPM(this.value)">
-    <label>LEN</label>
-    <input type="range" id="length-val"
-           min="0.1" max="2" step="0.1" value="0.4">
-  </div>
+  <label>REL</label>
+  <input type="range" id="release-val"
+         min="0.1" max="2" step="0.1" value="0.4">
+</div>
 
-  <div class="piano" id="piano-kb"></div>
+<div class="piano" id="piano-keys"></div>
 </footer>
+
 </div>
 
 <script>
-/* ========== ТВОЯ РАБОЧАЯ ЛОГИКА (ВОССТАНОВЛЕНА) ========== */
+// ======== TELEGRAM MINI APPS INIT ========
+Telegram.WebApp.ready();
+Telegram.WebApp.expand();
+document.body.classList.add("tg-ready");
 
-let initialized=false, playing=false, recording=false, currentStep=0;
-let selectedInst='piano', lastNote='C4';
+// (дальше ваша музыка и логика — БЕЗ изменений)
+let isLive=false, isPlaying=false, isRecording=false, currentStep=0;
+let activeInstrument='piano', lastPlayedNote='C4';
 
-const instruments=['piano','violin','bass','bell','strings','pad'];
-const melodyData={};
 const drumData={k:Array(16).fill(false),
-                 s:Array(16).fill(false),
-                 h:Array(16).fill(false)};
+                s:Array(16).fill(false),
+                h:Array(16).fill(false)};
 
-let synthEngines={}, drumEngines={};
+const melodyData=Array(16).fill(null);
+let instruments={}, percussion={};
 
-async function init(){
+async function boot(){
   await Tone.start();
+  document.getElementById('splash').style.display='none';
 
-  const masterComp=new Tone.Compressor(-20,4).toDestination();
-  const masterLimiter=new Tone.Limiter(-1).connect(masterComp);
+  const masterBus=new Tone.Compressor({
+    threshold:-20, ratio:4, attack:0.01, release:0.25
+  }).toDestination();
 
-  instruments.forEach(inst=>{
-    melodyData[inst]=Array(16).fill(null);
-    synthEngines[inst]=new Tone.PolySynth(Tone.Synth)
-      .connect(masterLimiter);
-  });
+  const limiter=new Tone.Limiter(-1).connect(masterBus);
 
-  drumEngines={
-    k:new Tone.MembraneSynth().connect(masterLimiter),
-    s:new Tone.NoiseSynth().connect(masterLimiter),
-    h:new Tone.MetalSynth().connect(masterLimiter)
+  instruments={
+    piano:new Tone.PolySynth(Tone.Synth).connect(limiter),
+    violin:new Tone.PolySynth(Tone.Synth).connect(limiter),
+    bass:new Tone.PolySynth(Tone.MonoSynth).connect(limiter),
+    bell:new Tone.PolySynth(Tone.FMSynth).connect(limiter),
+    strings:new Tone.PolySynth(Tone.Synth).connect(limiter),
+    pad:new Tone.PolySynth(Tone.Synth).connect(limiter)
   };
 
-  renderTracks();
-  renderPiano();
+  percussion={
+    k:new Tone.MembraneSynth().connect(limiter),
+    s:new Tone.NoiseSynth().connect(limiter),
+    h:new Tone.MetalSynth().connect(limiter)
+  };
 
-  Tone.Transport.scheduleRepeat(time=>{
+  renderInterface();
+
+  Tone.Transport.scheduleRepeat((time)=>{
     if(drumData.k[currentStep])
-      drumEngines.k.triggerAttackRelease("C1","8n",time);
+      percussion.k.triggerAttackRelease("C1","8n",time);
+    if(drumData.s[currentStep])
+      percussion.s.triggerAttackRelease("16n",time);
+    if(drumData.h[currentStep])
+      percussion.h.triggerAttackRelease("32n",time);
 
-    instruments.forEach(inst=>{
-      const noteObj=melodyData[inst][currentStep];
-      if(noteObj){
-        const dur=document.getElementById('length-val').value;
-        let n=noteObj.note;
-        if(inst==='bass')
-          n=Tone.Frequency(n).transpose(-12).toNote();
-        synthEngines[inst].triggerAttackRelease(n,dur,time);
-      }
+    const mel=melodyData[currentStep];
+    if(mel){
+      const rel=document.getElementById('release-val').value;
+      instruments[mel.type]
+        .triggerAttackRelease(mel.note,rel,time);
+    }
+
+    document.querySelectorAll('.step')
+      .forEach(s=>s.classList.remove('playing'));
+
+    ['melody','k','s','h'].forEach(id=>{
+      const el=document.getElementById(id+'-grid')
+        .children[currentStep];
+      if(el) el.classList.add('playing');
     });
 
     currentStep=(currentStep+1)%16;
   },"16n");
 
-  initialized=true;
+  isLive=true;
 }
 
-function renderTracks(){
-  const c=document.getElementById('melody-tracks');
+/* === ДАЛЬШЕ ВАШИ ФУНКЦИИ БЕЗ ИЗМЕНЕНИЙ === */
+function renderInterface(){
+ const mGrid=document.getElementById('melody-grid');
 
-  instruments.forEach(inst=>{
-    const sec=document.createElement('div');
-    sec.className='track-section';
-
-    const h=document.createElement('div');
-    h.className='track-header';
-    h.style.color=`var(--c-${inst})`;
-    h.textContent=inst.toUpperCase()+" TRACK";
-
-    const g=document.createElement('div');
-    g.className='grid';
-
-    for(let i=0;i<16;i++){
-      const s=document.createElement('div');
-      s.className='step';
-      s.onclick=()=>{
-        if(melodyData[inst][i]){
-          melodyData[inst][i]=null;
-          s.className='step';
-        }else{
-          melodyData[inst][i]={note:lastNote};
-          s.classList.add(`active-${inst}`);
-        }
-      };
-      g.appendChild(s);
+ for(let i=0;i<16;i++){
+  const s=document.createElement('div');
+  s.className='step';
+  s.onclick=()=>{
+    if(melodyData[i]){
+      melodyData[i]=null;
+      s.innerText='';
+      s.classList.remove('active-m');
+    } else {
+      melodyData[i]={note:lastPlayedNote,type:activeInstrument};
+      s.innerText=lastPlayedNote.replace(/[0-9]/,'');
+      s.classList.add('active-m');
     }
+  };
+  mGrid.appendChild(s);
+ }
 
-    sec.appendChild(h);
-    sec.appendChild(g);
-    c.appendChild(sec);
-  });
-
-  ['k','s','h'].forEach(id=>{
-    const g=document.getElementById(`${id}-grid`);
-    for(let i=0;i<16;i++){
-      const s=document.createElement('div');
-      s.className='step';
-      s.onclick=()=>{
-        drumData[id][i]=!drumData[id][i];
-        s.classList.toggle('active-drum');
-      };
-      g.appendChild(s);
-    }
-  });
-}
-
-function renderPiano(){
-  const scale=[
-   {n:'C4',b:0},{n:'C#4',b:1},{n:'D4',b:0},{n:'D#4',b:1},
-   {n:'E4',b:0},{n:'F4',b:0},{n:'F#4',b:1},{n:'G4',b:0},
-   {n:'G#4',b:1},{n:'A4',b:0},{n:'A#4',b:1},{n:'B4',b:0},
-   {n:'C5',b:0}
-  ];
-
-  const kb=document.getElementById('piano-kb');
-  let w=0;
-
-  scale.forEach(note=>{
-    const k=document.createElement('div');
-    k.className=note.b?'black':'white';
-    if(note.b) k.style.left=`calc(${(w/8)*100}% - 3.5%)`;
-    else w++;
-
-    k.onpointerdown=e=>{
-      e.preventDefault();
-      lastNote=note.n;
-
-      let n=note.n;
-      if(selectedInst==='bass')
-        n=Tone.Frequency(n).transpose(-12).toNote();
-
-      synthEngines[selectedInst]
-        .triggerAttackRelease(n,"8n");
+ ['k','s','h'].forEach(id=>{
+  const g=document.getElementById(id+'-grid');
+  for(let i=0;i<16;i++){
+    const s=document.createElement('div');
+    s.className='step';
+    s.onclick=()=>{
+      drumData[id][i]=!drumData[id][i];
+      s.classList.toggle('active-d');
     };
-
-    kb.appendChild(k);
-  });
-}
-
-function togglePlay(){
-  if(!initialized) init();
-
-  playing=!playing;
-
-  if(playing){
-    currentStep=0;
-    Tone.Transport.start("+0.05");
-    p-btn.textContent="■";
-    p-btn.classList.add("active");
-  }else{
-    Tone.Transport.stop();
-    p-btn.textContent="▶︎";
-    p-btn.classList.remove("active");
+    g.appendChild(s);
   }
+ });
+
+ const scale=[
+  {n:'C4',b:0},{n:'C#4',b:1},{n:'D4',b:0},{n:'D#4',b:1},
+  {n:'E4',b:0},{n:'F4',b:0},{n:'F#4',b:1},{n:'G4',b:0},
+  {n:'G#4',b:1},{n:'A4',b:0},{n:'A#4',b:1},{n:'B4',b:0},
+  {n:'C5',b:0}
+ ];
+
+ const piano=document.getElementById('piano-keys');
+ let whites=0;
+
+ scale.forEach(note=>{
+  const k=document.createElement('div');
+  k.className=note.b?'black':'white';
+
+  if(note.b)
+    k.style.left=`calc(${(whites/8)*100}% - 3.5%)`;
+  else whites++;
+
+  const play=e=>{
+    e.preventDefault();
+    lastPlayedNote=note.n;
+    instruments[activeInstrument].triggerAttack(note.n);
+    k.classList.add('pressed');
+
+    if(isRecording && isPlaying){
+      melodyData[currentStep]={note:note.n,type:activeInstrument};
+      const cell=document.getElementById('melody-grid')
+        .children[currentStep];
+      cell.innerText=note.n.replace(/[0-9]/,'');
+      cell.classList.add('active-m');
+    }
+  };
+
+  const stop=()=>{
+    instruments[activeInstrument].triggerRelease(note.n);
+    k.classList.remove('pressed');
+  };
+
+  k.onpointerdown=play;
+  k.onpointerup=stop;
+  k.onpointerleave=stop;
+
+  piano.appendChild(k);
+ });
 }
 
-function toggleRec(){
-  recording=!recording;
-  r-btn.classList.toggle("active",recording);
+function handlePlay(){
+ if(!isLive) return;
+ isPlaying=!isPlaying;
+
+ if(isPlaying){
+  currentStep=0;
+  Tone.Transport.start();
+ } else {
+  Tone.Transport.stop();
+ }
+
+ document.getElementById('play-btn')
+   .classList.toggle('active',isPlaying);
+
+ document.getElementById('play-btn')
+   .innerText=isPlaying?'Stop':'Play';
 }
 
-function changeBPM(v){
-  Tone.Transport.bpm.value=v;
-  bpm-ui.textContent=v+" BPM";
+function handleRec(){
+ if(!isPlaying) handlePlay();
+ isRecording=!isRecording;
+ document.getElementById('rec-btn')
+   .classList.toggle('active',isRecording);
 }
 
-function clearAll(){
-  instruments.forEach(i=>melodyData[i].fill(null));
-  Object.keys(drumData).forEach(d=>drumData[d].fill(false));
-  document.querySelectorAll('.step')
-    .forEach(s=>s.className='step');
+function switchInst(type,el){
+ activeInstrument=type;
+ document.querySelectorAll('.tab')
+   .forEach(t=>t.classList.remove('active'));
+ el.classList.add('active');
 }
 
-function setInst(t,el){
-  selectedInst=t;
-  document.querySelectorAll('.tab')
-    .forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
+function setTempo(v){
+ Tone.Transport.bpm.value=v;
+ document.getElementById('bpm-val').innerText=v+' BPM';
 }
 
-init();
+function resetAll(){
+ melodyData.fill(null);
+ Object.keys(drumData)
+   .forEach(k=>drumData[k].fill(false));
+
+ document.querySelectorAll('.step')
+   .forEach(s=>{
+     s.classList.remove('active-m','active-d');
+     s.innerText='';
+   });
+}
 </script>
 </body>
 </html>

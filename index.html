@@ -8,15 +8,15 @@
     <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
     <style>
         :root {
-            --bg-color: #32302f;
-            --surface: #3d3b3a;
+            --bg-color: #1a1a1a;
+            --surface: #2d2b2a;
             --glass: rgba(255, 255, 255, 0.04);
-            --glass-border: rgba(255, 255, 255, 0.1);
+            --glass-border: rgba(255, 255, 255, 0.08);
             --text-main: #efefef;
-            --text-dim: #928f8d;
+            --text-dim: #888;
             
-            --out-shadow: 6px 6px 12px rgba(0,0,0,0.4), -4px -4px 10px rgba(255,255,255,0.03);
-            --inner-shadow: inset 3px 3px 6px rgba(0,0,0,0.5), inset -2px -2px 5px rgba(255,255,255,0.02);
+            --out-shadow: 4px 4px 10px rgba(0,0,0,0.5), -2px -2px 8px rgba(255,255,255,0.02);
+            --inner-shadow: inset 2px 2px 5px rgba(0,0,0,0.6), inset -1px -1px 3px rgba(255,255,255,0.02);
             
             --c-piano: #007AFF;
             --c-violin: #FF9500;
@@ -24,9 +24,19 @@
             --c-bell: #AF52DE;
             --c-strings: #5AC8FA;
             --c-pad: #34C759;
+            
+            --c-rec: #FF3B30;
+            --c-play: #34C759;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; outline: none; }
+        * { 
+            box-sizing: border-box; 
+            -webkit-tap-highlight-color: transparent; 
+            outline: none;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
 
         body, html {
             margin: 0; padding: 0;
@@ -34,7 +44,8 @@
             color: var(--text-main);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             height: 100vh; width: 100vw;
-            overflow: hidden; touch-action: none;
+            overflow: hidden; 
+            touch-action: none;
         }
 
         .container {
@@ -43,28 +54,54 @@
         }
 
         header {
-            height: 50px; display: flex; align-items: center; justify-content: space-between;
+            height: 70px; display: flex; align-items: center; justify-content: center;
             flex-shrink: 0; border-bottom: 1px solid var(--glass-border);
             margin-bottom: 4px;
         }
 
-        .header-controls { display: flex; gap: 8px; align-items: center; }
+        /* Центральная консоль управления */
+        .console-hub {
+            display: flex; align-items: center; gap: 12px;
+            background: #111;
+            padding: 6px 14px;
+            border-radius: 40px;
+            box-shadow: var(--inner-shadow), 0 0 20px rgba(0,0,0,0.4);
+            border: 1px solid rgba(255,255,255,0.03);
+        }
 
-        .btn-round {
-            height: 34px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--glass-border);
-            background: var(--surface); color: #fff; font-size: 11px; font-weight: 800;
-            box-shadow: var(--out-shadow); text-transform: uppercase;
+        .lcd-display {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-width: 50px; height: 34px;
+            background: rgba(0,0,0,0.5);
+            border-radius: 6px;
+            box-shadow: inset 0 0 8px #000;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .bpm-val {
+            font-family: 'Courier New', monospace;
+            font-size: 14px; font-weight: bold;
+            color: #34C759; text-shadow: 0 0 5px rgba(52, 199, 89, 0.5);
+            line-height: 1;
+        }
+        .bpm-lbl { font-size: 7px; color: #555; text-transform: uppercase; margin-top: 1px; font-weight: 900; }
+
+        .btn-circle {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.1);
+            background: linear-gradient(145deg, #3a3837, #262423);
             display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--out-shadow);
+            transition: all 0.2s;
+            cursor: pointer;
+            color: #999;
         }
-        .btn-round:active { box-shadow: var(--inner-shadow); transform: scale(0.98); }
-        .btn-round.active-rec { color: #FF3B30; border-color: #FF3B30; box-shadow: var(--inner-shadow); }
-        .btn-round.active-play { color: #34C759; border-color: #34C759; box-shadow: var(--inner-shadow); }
+        .btn-circle:active { box-shadow: var(--inner-shadow); transform: scale(0.94); }
+        .btn-circle svg { width: 18px; height: 18px; fill: currentColor; }
 
-        .lcd-mini {
-            background: rgba(0,0,0,0.3); padding: 6px 10px; border-radius: 8px;
-            font-family: 'Courier New', monospace; font-size: 13px; color: #34C759;
-            box-shadow: var(--inner-shadow); min-width: 75px; text-align: center;
-        }
+        .btn-circle.play.active-play { color: var(--c-play); border-color: var(--c-play); box-shadow: 0 0 10px rgba(52, 199, 89, 0.2); }
+        .btn-circle.rec.active-rec { color: var(--c-rec); border-color: var(--c-rec); box-shadow: 0 0 10px rgba(255, 59, 48, 0.2); }
+        .btn-circle.reset:active { color: #fff; }
 
         main {
             flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;
@@ -83,7 +120,7 @@
 
         .step-grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
         .step {
-            aspect-ratio: 1/1.4; background: rgba(0,0,0,0.25); border-radius: 4px;
+            aspect-ratio: 1/1.4; background: rgba(0,0,0,0.3); border-radius: 4px;
             box-shadow: var(--inner-shadow); transition: 0.1s;
         }
         .step.playing { border: 1.5px solid #fff; transform: scale(1.05); z-index: 5; }
@@ -92,10 +129,10 @@
         .drum-name { width: 34px; font-size: 8px; font-weight: 900; color: var(--text-dim); }
 
         footer {
-            background: rgba(45, 43, 42, 0.98);
+            background: rgba(30, 30, 30, 0.98);
             border-top: 1px solid var(--glass-border);
             padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
-            box-shadow: 0 -8px 25px rgba(0,0,0,0.4);
+            box-shadow: 0 -8px 25px rgba(0,0,0,0.5);
             flex-shrink: 0;
         }
 
@@ -116,8 +153,8 @@
             border-radius: 2px; box-shadow: var(--inner-shadow);
         }
         input[type=range]::-webkit-slider-thumb { 
-            appearance: none; width: 18px; height: 18px; border-radius: 50%; 
-            background: #fff; box-shadow: var(--out-shadow); border: 2px solid #333;
+            appearance: none; width: 20px; height: 20px; border-radius: 50%; 
+            background: #fff; box-shadow: var(--out-shadow); border: 4px solid #333;
         }
 
         .piano-keys { height: 110px; display: flex; position: relative; gap: 3px; }
@@ -126,9 +163,9 @@
             border-radius: 0 0 4px 4px; z-index: 1; box-shadow: var(--out-shadow);
         }
         .p-black {
-            position: absolute; background: linear-gradient(180deg, #444 0%, #111 100%);
+            position: absolute; background: linear-gradient(180deg, #333 0%, #000 100%);
             width: 7%; height: 55%; z-index: 2; border-radius: 0 0 4px 4px;
-            box-shadow: 3px 3px 6px rgba(0,0,0,0.5);
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
         }
         .p-white.active { background: #b0b0b0; transform: translateY(1px); box-shadow: var(--inner-shadow); }
         .p-black.active { background: #000; transform: translateY(1px); box-shadow: var(--inner-shadow); }
@@ -140,20 +177,34 @@
         .step.active-strings { background: var(--c-strings); box-shadow: 0 0 10px var(--c-strings); }
         .step.active-pad { background: var(--c-pad); box-shadow: 0 0 10px var(--c-pad); }
         .step.active-drum { background: #ffffff; box-shadow: 0 0 10px #ffffff; }
-
-        .reset-txt { font-size: 11px; font-weight: 700; color: #FF3B30; opacity: 0.8; letter-spacing: 0.5px; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div class="container" oncontextmenu="return false;">
     <header>
-        <div class="header-controls">
-            <button id="play-btn" class="btn-round" onclick="togglePlay()">Play</button>
-            <button id="rec-btn" class="btn-round" onclick="toggleRec()">Rec</button>
+        <div class="console-hub">
+            <!-- Reset -->
+            <div class="btn-circle reset" onclick="clearData()">
+                <svg viewBox="0 0 24 24"><path d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+            </div>
+            
+            <!-- Play -->
+            <div id="play-btn" class="btn-circle play" onclick="togglePlay()">
+                <svg id="play-icon" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+            </div>
+
+            <!-- LCD BPM -->
+            <div class="lcd-display">
+                <span id="bpm-val" class="bpm-val">120</span>
+                <span class="bpm-lbl">BPM</span>
+            </div>
+            
+            <!-- Rec -->
+            <div id="rec-btn" class="btn-circle rec" onclick="toggleRec()">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/></svg>
+            </div>
         </div>
-        <div class="lcd-mini" id="bpm-display">120 BPM</div>
-        <div class="reset-txt" onclick="clearData()">RESET</div>
     </header>
 
     <main id="sequencer"></main>
@@ -186,7 +237,9 @@
 <script>
     const tg = window.Telegram.WebApp;
     tg.expand();
-    tg.headerColor = '#32302f';
+    tg.headerColor = '#1a1a1a';
+
+    document.addEventListener('contextmenu', e => e.preventDefault());
 
     let audioCtxStarted = false, isPlaying = false, isRecording = false, step = 0;
     let currentInst = 'piano', lastPlayedNote = 'C4';
@@ -200,41 +253,15 @@
     async function startAudio() {
         if (audioCtxStarted) return;
         await Tone.start();
-        
         const limiter = new Tone.Limiter(-1).toDestination();
 
-        // Возвращены звуки (осцилляторы и огибающие) из первой версии
         synths = {
-            piano: new Tone.PolySynth(Tone.Synth, { 
-                maxPolyphony: 12,
-                oscillator: { type: "amsine" }, 
-                envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.8 } 
-            }).connect(limiter),
-            violin: new Tone.PolySynth(Tone.FMSynth, { 
-                maxPolyphony: 8,
-                harmonicity: 3, 
-                envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 } 
-            }).connect(limiter),
-            bass: new Tone.PolySynth(Tone.Synth, { 
-                maxPolyphony: 4,
-                oscillator: { type: "triangle" }, 
-                envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 0.1 } 
-            }).connect(limiter),
-            bell: new Tone.PolySynth(Tone.FMSynth, { 
-                maxPolyphony: 12,
-                harmonicity: 1.5, modulationIndex: 10, 
-                envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.8 } 
-            }).connect(limiter),
-            strings: new Tone.PolySynth(Tone.Synth, { 
-                maxPolyphony: 16,
-                oscillator: { type: "sawtooth" }, 
-                envelope: { attack: 0.3, decay: 0.1, sustain: 0.6, release: 1 } 
-            }).connect(limiter),
-            pad: new Tone.PolySynth(Tone.Synth, { 
-                maxPolyphony: 16,
-                oscillator: { type: "sine" }, 
-                envelope: { attack: 0.8, decay: 0.2, sustain: 0.5, release: 1.5 } 
-            }).connect(limiter)
+            piano: new Tone.PolySynth(Tone.Synth, { maxPolyphony: 12, oscillator: { type: "amsine" }, envelope: { attack: 0.01, decay: 0.3, sustain: 0.1, release: 0.8 } }).connect(limiter),
+            violin: new Tone.PolySynth(Tone.FMSynth, { maxPolyphony: 8, harmonicity: 3, envelope: { attack: 0.1, decay: 0.2, sustain: 0.5, release: 0.8 } }).connect(limiter),
+            bass: new Tone.PolySynth(Tone.Synth, { maxPolyphony: 4, oscillator: { type: "triangle" }, envelope: { attack: 0.02, decay: 0.1, sustain: 0.3, release: 0.1 } }).connect(limiter),
+            bell: new Tone.PolySynth(Tone.FMSynth, { maxPolyphony: 12, harmonicity: 1.5, modulationIndex: 10, envelope: { attack: 0.001, decay: 0.4, sustain: 0, release: 0.8 } }).connect(limiter),
+            strings: new Tone.PolySynth(Tone.Synth, { maxPolyphony: 16, oscillator: { type: "sawtooth" }, envelope: { attack: 0.3, decay: 0.1, sustain: 0.6, release: 1 } }).connect(limiter),
+            pad: new Tone.PolySynth(Tone.Synth, { maxPolyphony: 16, oscillator: { type: "sine" }, envelope: { attack: 0.8, decay: 0.2, sustain: 0.5, release: 1.5 } }).connect(limiter)
         };
 
         drumSynths = {
@@ -254,7 +281,6 @@
                     const dur = document.getElementById('note-len').value;
                     let f = n.note;
                     if(name === 'bass') f = Tone.Frequency(f).transpose(-12).toNote();
-                    // triggerAttackRelease предотвращает залипание на транспорте
                     synths[name].triggerAttackRelease(f, dur, time);
                 }
             });
@@ -291,14 +317,11 @@
             for(let i=0; i<16; i++) {
                 const s = document.createElement('div');
                 s.className = 'step';
-                s.onclick = () => {
+                s.onclick = (e) => {
+                    e.preventDefault();
                     startAudio();
-                    if(patterns[name][i]) {
-                        patterns[name][i] = null; s.className = 'step';
-                    } else {
-                        patterns[name][i] = { note: lastPlayedNote };
-                        s.classList.add(`active-${name}`);
-                    }
+                    if(patterns[name][i]) { patterns[name][i] = null; s.className = 'step'; } 
+                    else { patterns[name][i] = { note: lastPlayedNote }; s.classList.add(`active-${name}`); }
                 };
                 grid.appendChild(s);
             }
@@ -316,7 +339,7 @@
             for(let i=0; i<16; i++) {
                 const s = document.createElement('div');
                 s.className = 'step';
-                s.onclick = () => { startAudio(); drums[d][i] = !drums[d][i]; s.classList.toggle('active-drum'); };
+                s.onclick = (e) => { e.preventDefault(); startAudio(); drums[d][i] = !drums[d][i]; s.classList.toggle('active-drum'); };
                 grid.appendChild(s);
             }
             dCard.appendChild(row);
@@ -336,11 +359,7 @@
                 startAudio();
                 lastPlayedNote = note.n;
                 let f = note.n; if(currentInst === 'bass') f = Tone.Frequency(f).transpose(-12).toNote();
-                
-                // Чтобы звук не залипал при ручной игре, используем triggerAttack
-                // Но при pointerup вызываем triggerRelease
                 synths[currentInst].triggerAttack(f);
-                
                 key.classList.add('active');
                 if(isRecording && isPlaying) {
                     patterns[currentInst][step] = { note: note.n };
@@ -348,17 +367,18 @@
                     cell.className = `step active-${currentInst}`;
                 }
             };
-            const handleUp = () => { 
+            const handleUp = (e) => { 
+                e.preventDefault();
                 if(synths[currentInst]) {
                     let f = lastPlayedNote; if(currentInst === 'bass') f = Tone.Frequency(f).transpose(-12).toNote();
                     synths[currentInst].triggerRelease(f); 
                 }
                 key.classList.remove('active'); 
             };
-            
             key.addEventListener('pointerdown', handleDown);
             key.addEventListener('pointerup', handleUp);
             key.addEventListener('pointerleave', handleUp);
+            key.addEventListener('touchstart', (e) => e.preventDefault(), {passive: false});
             kb.appendChild(key);
         });
     }
@@ -366,16 +386,19 @@
     function togglePlay() {
         startAudio().then(() => {
             isPlaying = !isPlaying;
+            const btn = document.getElementById('play-btn');
+            const icon = document.getElementById('play-icon');
             if(isPlaying) { 
                 step = 0; 
                 Tone.Transport.start(); 
+                icon.innerHTML = '<path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>'; // Stop
+                btn.classList.add('active-play');
             } else { 
                 Tone.Transport.stop(); 
-                // Принудительная очистка всех голосов при остановке
                 instList.forEach(i => { if(synths[i]) synths[i].releaseAll(); });
+                icon.innerHTML = '<path d="M8 5v14l11-7z"/>'; // Play
+                btn.classList.remove('active-play');
             }
-            document.getElementById('play-btn').classList.toggle('active-play', isPlaying);
-            document.getElementById('play-btn').innerText = isPlaying ? 'Stop' : 'Play';
         });
     }
 
@@ -388,7 +411,10 @@
         el.classList.add('active');
     }
 
-    function updateBPM(v) { Tone.Transport.bpm.value = v; document.getElementById('bpm-display').innerText = v + ' BPM'; }
+    function updateBPM(v) { 
+        Tone.Transport.bpm.value = v; 
+        document.getElementById('bpm-val').innerText = v; 
+    }
 
     function clearData() {
         instList.forEach(n => {

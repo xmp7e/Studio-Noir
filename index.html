@@ -1,468 +1,415 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport"
-      content="width=device-width, height=device-height,
-               initial-scale=1.0, maximum-scale=1.0,
-               user-scalable=no, viewport-fit=cover">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Studio Noir: Glass Pro</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+    <style>
+        :root {
+            /* Палитра в стиле скриншота */
+            --bg-color: #3d3b3a;
+            --surface: #4a4846;
+            --glass-bg: rgba(255, 255, 255, 0.08);
+            --glass-border: rgba(255, 255, 255, 0.15);
+            --text-main: #efefef;
+            --text-dim: #9d9a98;
+            --accent: #007AFF;
+            --active-shadow: inset 4px 4px 8px rgba(0,0,0,0.4), inset -4px -4px 8px rgba(255,255,255,0.05);
+            --out-shadow: 8px 8px 16px rgba(0,0,0,0.3), -4px -4px 12px rgba(255,255,255,0.05);
+            
+            /* Инструменты */
+            --c-piano: #007AFF;
+            --c-violin: #FF9500;
+            --c-bass: #FF2D55;
+            --c-bell: #AF52DE;
+            --c-strings: #5AC8FA;
+            --c-pad: #34C759;
+        }
 
-<title>Studio Noir</title>
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-<script src="https://unpkg.com/tone@14.8.49/build/Tone.js"></script>
+        body, html {
+            margin: 0; padding: 0;
+            background: var(--bg-color);
+            color: var(--text-main);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            height: 100vh; width: 100vw;
+            overflow: hidden; touch-action: none;
+        }
 
-<style>
-:root{
-  --bg:#000;
-  --card:rgba(255,255,255,.06);
-  --border:rgba(255,255,255,.12);
-  --accent:#0A84FF;
-  --accent-glow:rgba(10,132,255,.45);
-  --danger:#FF453A;
-  --text:#fff;
-  --dim:#8E8E93;
-}
+        #splash {
+            position: fixed; inset: 0; background: var(--bg-color); z-index: 1000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.6s ease;
+        }
 
-html,body{
-  margin:0;
-  background:linear-gradient(180deg,#000,#050505);
-  color:var(--text);
-  font-family:-apple-system, SF Pro Display, system-ui, sans-serif;
-  height:100%;
-  overflow:hidden;
-  touch-action:manipulation;
-}
+        .start-btn {
+            background: var(--surface); color: #fff; border: none;
+            padding: 22px 60px; border-radius: 20px; font-weight: 700;
+            box-shadow: var(--out-shadow); cursor: pointer; font-size: 16px;
+            letter-spacing: 2px;
+        }
 
-/* ---- SPLASH ---- */
-#splash{
-  position:fixed;
-  inset:0;
-  background:#000;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-  gap:16px;
-  z-index:999;
-}
-#splash button{
-  padding:16px 48px;
-  border-radius:24px;
-  border:0;
-  font-weight:700;
-}
+        .container {
+            display: flex; flex-direction: column; height: 100vh;
+            padding: env(safe-area-inset-top) 12px env(safe-area-inset-bottom) 12px;
+        }
 
-/* ---- LAYOUT ---- */
-.app{
-  height:100vh;
-  padding:
-    env(safe-area-inset-top)
-    8px
-    env(safe-area-inset-bottom)
-    8px;
-  box-sizing:border-box;
-  display:flex;
-  flex-direction:column;
-  gap:8px;
-}
+        header {
+            height: 60px; display: flex; align-items: center; justify-content: space-between;
+            flex-shrink: 0;
+        }
 
-/* ---- HEADER ---- */
-.topbar{
-  display:grid;
-  grid-template-columns:1fr auto 1fr;
-  align-items:center;
-  height:56px;
-}
+        .btn {
+            height: 40px; padding: 0 20px; border-radius: 12px; border: 1px solid var(--glass-border);
+            background: var(--surface); color: #fff; font-size: 12px; font-weight: 700;
+            box-shadow: var(--out-shadow); text-transform: uppercase; letter-spacing: 1px;
+        }
+        .btn:active { box-shadow: var(--active-shadow); }
+        .btn-play.active { color: #34C759; box-shadow: var(--active-shadow); }
+        .btn-rec.active { color: #FF3B30; box-shadow: var(--active-shadow); }
 
-.btn-glass{
-  background:var(--card);
-  border:1px solid var(--border);
-  backdrop-filter:blur(12px);
-  color:white;
-  border-radius:14px;
-  padding:8px 12px;
-  font-weight:700;
-}
+        .lcd {
+            background: rgba(0,0,0,0.2); padding: 8px 14px; border-radius: 10px;
+            font-weight: 800; font-size: 13px; font-family: 'Courier New', monospace;
+            box-shadow: inset 2px 2px 5px rgba(0,0,0,0.5); color: #34C759;
+        }
 
-.center-pill{
-  background:var(--card);
-  border-radius:16px;
-  padding:8px 14px;
-  font-weight:700;
-}
+        /* Sequencer */
+        main {
+            flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;
+            padding: 10px 0;
+        }
+        main::-webkit-scrollbar { display: none; }
 
-/* ---- TABS ---- */
-.tabs-wrap{
-  overflow-x:auto;
-  white-space:nowrap;
-  padding:6px 0;
-}
-.tabs{
-  display:inline-flex;
-  gap:8px;
-}
-.tab{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:16px;
-  padding:10px 14px;
-  font-size:11px;
-  font-weight:800;
-  color:var(--dim);
-}
-.tab.active{
-  background:var(--accent);
-  color:white;
-  box-shadow:0 0 14px var(--accent-glow);
-}
+        .track-section {
+            background: var(--glass-bg); border-radius: 18px; padding: 12px;
+            border: 1px solid var(--glass-border); backdrop-filter: blur(10px);
+            box-shadow: var(--out-shadow);
+        }
 
-/* ---- GLASS CARD ---- */
-.card{
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius:20px;
-  padding:12px;
-  flex:1;
-  display:flex;
-  flex-direction:column;
-  gap:10px;
-}
+        .track-header { margin-bottom: 8px; }
+        .track-name { font-size: 9px; font-weight: 900; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1.5px; }
 
-.row-label{
-  font-size:10px;
-  font-weight:800;
-  color:var(--dim);
-  letter-spacing:.5px;
-}
+        .grid { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; }
+        .step {
+            aspect-ratio: 1/1.1; background: rgba(0,0,0,0.2); border-radius: 4px;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.4);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 7px; font-weight: 800; color: transparent;
+        }
 
-/* 16 circles */
-.grid{
-  display:grid;
-  grid-template-columns:repeat(16,1fr);
-  gap:6px;
-}
-.step{
-  aspect-ratio:1/1;
-  border-radius:50%;
-  background:rgba(255,255,255,.06);
-}
-.step.active-m{ background:var(--accent); }
-.step.active-d{ background:white; }
-.step.playing{
-  outline:2px solid white;
-  transform:scale(1.1);
-}
+        /* Colors with Glow */
+        .step.active-piano { background: var(--c-piano); box-shadow: 0 0 10px var(--c-piano); color: #fff; }
+        .step.active-violin { background: var(--c-violin); box-shadow: 0 0 10px var(--c-violin); color: #fff; }
+        .step.active-bass { background: var(--c-bass); box-shadow: 0 0 10px var(--c-bass); color: #fff; }
+        .step.active-bell { background: var(--c-bell); box-shadow: 0 0 10px var(--c-bell); color: #fff; }
+        .step.active-strings { background: var(--c-strings); box-shadow: 0 0 10px var(--c-strings); color: #fff; }
+        .step.active-pad { background: var(--c-pad); box-shadow: 0 0 10px var(--c-pad); color: #fff; }
+        .step.active-drum { background: #fff; box-shadow: 0 0 10px #fff; }
+        
+        .step.playing { border: 1.5px solid #fff; z-index: 2; transform: scale(1.1); }
 
-/* ---- SLIDERS ---- */
-.sliders{
-  display:flex;
-  gap:12px;
-  align-items:center;
-}
-input[type=range]{
-  -webkit-appearance:none;
-  flex:1;
-  height:6px;
-  border-radius:3px;
-  background:var(--border);
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:white;
-}
+        /* Drum Labels */
+        .drum-row { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
+        .drum-label { width: 35px; font-size: 8px; font-weight: 900; color: var(--text-dim); }
 
-/* ---- PIANO ---- */
-.piano{
-  height:140px;
-  display:flex;
-  position:relative;
-  gap:2px;
-}
-.white{
-  flex:1;
-  background:linear-gradient(180deg,#fff,#e0e0e0);
-  border-radius:10px;
-}
-.black{
-  position:absolute;
-  background:#000;
-  width:6%;
-  height:58%;
-  border-radius:0 0 8px 8px;
-}
-.white.pressed{ transform:translateY(2px); }
-.black.pressed{ transform:translateY(2px); }
-</style>
+        /* Footer */
+        footer { flex-shrink: 0; background: rgba(50, 48, 47, 0.9); border-radius: 24px 24px 0 0; padding-bottom: 5px; }
+        
+        .tab-bar { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; padding: 12px; }
+        .tab {
+            padding: 10px 0; border-radius: 10px; font-size: 8px; font-weight: 800;
+            text-align: center; color: var(--text-dim); background: var(--surface);
+            box-shadow: var(--out-shadow);
+        }
+        .tab.active { background: #efefef; color: #000; box-shadow: var(--active-shadow); }
+
+        .sliders { display: flex; gap: 15px; padding: 0 15px 12px; align-items: center; }
+        .sliders label { font-size: 9px; font-weight: 800; color: var(--text-dim); }
+        
+        input[type=range] { 
+            flex: 1; height: 6px; appearance: none; 
+            background: rgba(0,0,0,0.3); border-radius: 10px;
+            box-shadow: inset 1px 1px 3px rgba(0,0,0,0.5);
+        }
+        input[type=range]::-webkit-slider-thumb { 
+            appearance: none; width: 18px; height: 18px; border-radius: 50%; 
+            background: #efefef; box-shadow: var(--out-shadow);
+        }
+
+        .piano { height: 110px; display: flex; position: relative; padding: 4px; gap: 3px; }
+        .white {
+            flex: 1; background: linear-gradient(180deg, #fff 0%, #dcdcdc 100%);
+            border-radius: 6px; z-index: 1; box-shadow: var(--out-shadow);
+        }
+        .black {
+            position: absolute; background: linear-gradient(180deg, #333 0%, #111 100%);
+            width: 7%; height: 55%; z-index: 2; border-radius: 0 0 5px 5px;
+            box-shadow: 4px 4px 8px rgba(0,0,0,0.5);
+        }
+        .white.pressed { background: #aaa; box-shadow: var(--active-shadow); transform: translateY(1px); }
+        .black.pressed { background: #000; box-shadow: var(--active-shadow); transform: translateY(1px); }
+
+        .reset-btn { color: #FF3B30; font-size: 11px; font-weight: 700; opacity: 0.7; }
+    </style>
 </head>
-
 <body>
 
 <div id="splash">
-  <h1 style="font-weight:300">Studio Noir</h1>
-  <button onclick="boot()">ЗАПУСТИТЬ</button>
+    <h1 style="font-weight: 200; letter-spacing: 6px; margin-bottom: 30px;">STUDIO NOIR</h1>
+    <button class="start-btn" onclick="init()">ВОЙТИ</button>
 </div>
 
-<div class="app">
+<div class="container">
+    <header>
+        <div style="display:flex; gap:10px">
+            <button id="p-btn" class="btn btn-play" onclick="togglePlay()">Play</button>
+            <button id="r-btn" class="btn btn-rec" onclick="toggleRec()">Rec</button>
+        </div>
+        <div class="lcd" id="bpm-ui">120 BPM</div>
+        <div class="reset-btn" onclick="clearAll()">RESET</div>
+    </header>
 
-<div class="topbar">
-  <div>
-    <button class="btn-glass" onclick="Telegram.WebApp.close()">◀ Закрыть</button>
-  </div>
+    <main id="sequencer-main">
+        <div id="melody-tracks"></div>
+        
+        <!-- Drum Section -->
+        <div class="track-section">
+            <div class="track-header"><span class="track-name">Rhythm Section</span></div>
+            <div class="drum-row">
+                <span class="drum-label">KICK</span>
+                <div class="grid" id="k-grid" style="flex:1"></div>
+            </div>
+            <div class="drum-row">
+                <span class="drum-label">SNARE</span>
+                <div class="grid" id="s-grid" style="flex:1"></div>
+            </div>
+            <div class="drum-row">
+                <span class="drum-label">HIHAT</span>
+                <div class="grid" id="h-grid" style="flex:1"></div>
+            </div>
+        </div>
+    </main>
 
-  <div class="center-pill" id="bpm-val">120 BPM</div>
-
-  <div style="text-align:right">
-    <button class="btn-glass" onclick="savePattern()">✓ Сохранить</button>
-  </div>
-</div>
-
-<div class="tabs-wrap">
-  <div class="tabs">
-    <div class="tab active" onclick="switchInst('piano',this)">PIANO</div>
-    <div class="tab" onclick="switchInst('bass',this)">BASS</div>
-    <div class="tab" onclick="switchInst('strings',this)">STRINGS</div>
-    <div class="tab" onclick="switchInst('pad',this)">PAD</div>
-    <div class="tab" onclick="switchInst('bell',this)">BELL</div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="row-label">MELODY FLOW</div>
-  <div class="grid" id="melody-grid"></div>
-
-  <div class="row-label">BEAT PADS</div>
-  <div class="grid" id="k-grid"></div>
-  <div class="grid" id="s-grid"></div>
-  <div class="grid" id="h-grid"></div>
-</div>
-
-<div class="sliders">
-  <label>BPM</label>
-  <input type="range" min="60" max="180" value="120"
-         oninput="setTempo(this.value)">
-  <label>REL</label>
-  <input type="range" id="release-val"
-         min="0.1" max="2" step="0.1" value="0.4">
-</div>
-
-<div class="piano" id="piano-keys"></div>
-
+    <footer>
+        <div class="tab-bar">
+            <div class="tab active" onclick="setInst('piano', this)">PIANO</div>
+            <div class="tab" onclick="setInst('violin', this)">VIOLIN</div>
+            <div class="tab" onclick="setInst('bass', this)">BASS</div>
+            <div class="tab" onclick="setInst('bell', this)">BELL</div>
+            <div class="tab" onclick="setInst('strings', this)">STRINGS</div>
+            <div class="tab" onclick="setInst('pad', this)">PAD</div>
+        </div>
+        <div class="sliders">
+            <label>BPM</label>
+            <input type="range" min="60" max="180" value="120" oninput="changeBPM(this.value)">
+            <label>LEN</label>
+            <input type="range" id="length-val" min="0.1" max="1.2" step="0.1" value="0.4">
+        </div>
+        <div class="piano" id="piano-kb"></div>
+    </footer>
 </div>
 
 <script>
-Telegram.WebApp.ready();
-Telegram.WebApp.expand();
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+    tg.backgroundColor = '#3d3b3a';
+    tg.headerColor = '#3d3b3a';
 
-let isLive=false,isPlaying=false,isRecording=false,currentStep=0;
-let activeInstrument='piano', lastPlayedNote='C4';
+    let initialized = false, playing = false, recording = false, currentStep = 0;
+    let selectedInst = 'piano', lastNote = 'C4';
+    
+    const instruments = ['piano', 'violin', 'bass', 'bell', 'strings', 'pad'];
+    const melodyData = {};
+    const drumData = { k: Array(16).fill(false), s: Array(16).fill(false), h: Array(16).fill(false) };
+    
+    let synthEngines = {}, drumEngines = {};
 
-const drumData={k:Array(16).fill(false),
-                s:Array(16).fill(false),
-                h:Array(16).fill(false)};
-const melodyData=Array(16).fill(null);
-let instruments={}, percussion={};
+    async function init() {
+        await Tone.start();
+        document.getElementById('splash').style.opacity = '0';
+        setTimeout(() => document.getElementById('splash').style.display = 'none', 600);
 
-async function boot(){
-  await Tone.start();
-  splash.style.display='none';
+        const master = new Tone.Limiter(-1).toDestination();
 
-  const limiter = new Tone.Limiter(-1).toDestination();
+        // Улучшенные звуковые движки
+        synthEngines = {
+            piano: new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "amsine", harmonicity: 0.5 },
+                envelope: { attack: 0.005, decay: 0.4, sustain: 0.1, release: 1.2 }
+            }).connect(master),
 
-  /* ====== РАЗНЫЕ ЗВУКИ СИНТЕЗАТОРОВ ====== */
-  instruments = {
+            violin: new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 3.01, modulationIndex: 12,
+                envelope: { attack: 0.2, decay: 0.2, sustain: 0.7, release: 1 }
+            }).connect(master),
 
-    // PIANO — мягкий, короткий, перкуссивный
-    piano: new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "triangle" },
-      envelope: {
-        attack: 0.01,
-        decay: 0.2,
-        sustain: 0.2,
-        release: 0.6
-      }
-    }).connect(limiter),
+            bass: new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "fatsawtooth", count: 3, spread: 20 },
+                envelope: { attack: 0.01, decay: 0.2, sustain: 0.2, release: 0.2 }
+            }).connect(master),
 
-    // BASS — жирный саб
-    bass: new Tone.MonoSynth({
-      oscillator: { type: "square" },
-      filter: { Q: 2, type: "lowpass", frequency: 200 },
-      envelope: {
-        attack: 0.01,
-        decay: 0.3,
-        sustain: 0.5,
-        release: 0.3
-      }
-    }).connect(limiter),
+            bell: new Tone.PolySynth(Tone.FMSynth, {
+                harmonicity: 2.4, modulationIndex: 20,
+                envelope: { attack: 0.001, decay: 0.5, sustain: 0, release: 1.5 }
+            }).connect(master),
 
-    // STRINGS — оркестровые, плавные
-    strings: new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "sawtooth" },
-      envelope: {
-        attack: 0.6,
-        decay: 0.3,
-        sustain: 0.7,
-        release: 1.5
-      }
-    }).connect(limiter),
+            strings: new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sawtooth" },
+                envelope: { attack: 0.6, decay: 0.3, sustain: 0.8, release: 2 }
+            }).connect(master),
 
-    // PAD — воздушный эмбиент
-    pad: new Tone.PolySynth(Tone.Synth, {
-      oscillator: { type: "sine" },
-      envelope: {
-        attack: 1.2,
-        decay: 0.4,
-        sustain: 0.8,
-        release: 2.2
-      }
-    }).connect(limiter),
+            pad: new Tone.PolySynth(Tone.Synth, {
+                oscillator: { type: "sine" },
+                envelope: { attack: 1.5, decay: 0.5, sustain: 0.7, release: 3 }
+            }).connect(master)
+        };
 
-    // BELL — металлический звон
-    bell: new Tone.PolySynth(Tone.FMSynth, {
-      harmonicity: 3,
-      modulationIndex: 12,
-      envelope: {
-        attack: 0.01,
-        decay: 0.2,
-        sustain: 0.1,
-        release: 0.8
-      }
-    }).connect(limiter)
-  };
+        drumEngines = {
+            k: new Tone.MembraneSynth({ volume: 2 }).connect(master),
+            s: new Tone.NoiseSynth({ envelope: { attack: 0.001, decay: 0.12, sustain: 0 } }).connect(master),
+            h: new Tone.MetalSynth({ envelope: { attack: 0.001, decay: 0.05, sustain: 0 } }).connect(master)
+        };
 
-  percussion={
-    k:new Tone.MembraneSynth().connect(limiter),
-    s:new Tone.NoiseSynth().connect(limiter),
-    h:new Tone.MetalSynth().connect(limiter)
-  };
+        renderTracks();
+        renderPiano();
 
-  renderInterface();
+        Tone.Transport.scheduleRepeat((time) => {
+            if (drumData.k[currentStep]) drumEngines.k.triggerAttackRelease("C1", "16n", time);
+            if (drumData.s[currentStep]) drumEngines.s.triggerAttackRelease("16n", time);
+            if (drumData.h[currentStep]) drumEngines.h.triggerAttackRelease("32n", time);
 
-  Tone.Transport.scheduleRepeat((time)=>{
-    if(drumData.k[currentStep])
-      percussion.k.triggerAttackRelease("C1","8n",time);
-    if(drumData.s[currentStep])
-      percussion.s.triggerAttackRelease("16n",time);
-    if(drumData.h[currentStep])
-      percussion.h.triggerAttackRelease("32n",time);
+            instruments.forEach(inst => {
+                const noteObj = melodyData[inst][currentStep];
+                if (noteObj) {
+                    const dur = document.getElementById('length-val').value;
+                    let freq = noteObj.note;
+                    if(inst === 'bass') freq = Tone.Frequency(freq).transpose(-12).toNote();
+                    synthEngines[inst].triggerAttackRelease(freq, dur, time);
+                }
+            });
 
-    const mel=melodyData[currentStep];
-    if(mel){
-      const rel=document.getElementById('release-val').value;
-      instruments[mel.type]
-        .triggerAttackRelease(mel.note,rel,time);
+            Tone.Draw.schedule(() => {
+                document.querySelectorAll('.step.playing').forEach(s => s.classList.remove('playing'));
+                instruments.forEach(inst => {
+                    const row = document.getElementById(`grid-${inst}`);
+                    if(row && row.children[currentStep]) row.children[currentStep].classList.add('playing');
+                });
+                ['k','s','h'].forEach(d => {
+                    const row = document.getElementById(`${d}-grid`);
+                    if(row && row.children[currentStep]) row.children[currentStep].classList.add('playing');
+                });
+            }, time);
+
+            currentStep = (currentStep + 1) % 16;
+        }, "16n");
+
+        initialized = true;
     }
 
-    document.querySelectorAll('.step')
-      .forEach(s=>s.classList.remove('playing'));
+    function renderTracks() {
+        const container = document.getElementById('melody-tracks');
+        instruments.forEach(inst => {
+            melodyData[inst] = Array(16).fill(null);
+            const section = document.createElement('div');
+            section.className = 'track-section';
+            section.innerHTML = `
+                <div class="track-header"><span class="track-name" style="color: var(--c-${inst})">${inst} Track</span></div>
+                <div class="grid" id="grid-${inst}"></div>
+            `;
+            const grid = section.querySelector('.grid');
+            for (let i = 0; i < 16; i++) {
+                const s = document.createElement('div');
+                s.className = 'step';
+                s.onclick = () => {
+                    if (melodyData[inst][i]) {
+                        melodyData[inst][i] = null; s.innerText = ''; s.className = 'step';
+                    } else {
+                        melodyData[inst][i] = { note: lastNote };
+                        s.innerText = lastNote.replace(/[0-9]/, '');
+                        s.classList.add(`active-${inst}`);
+                    }
+                };
+                grid.appendChild(s);
+            }
+            container.appendChild(section);
+        });
 
-    ['melody','k','s','h'].forEach(id=>{
-      const el=document.getElementById(id+'-grid')
-        .children[currentStep];
-      if(el) el.classList.add('playing');
-    });
-
-    currentStep=(currentStep+1)%16;
-  },"16n");
-
-  isLive=true;
-}
-
-/* ---- RENDER UI ---- */
-function renderInterface(){
-  const m=document.getElementById('melody-grid');
-  for(let i=0;i<16;i++){
-    const s=document.createElement('div');
-    s.className='step';
-    s.onclick=()=>{
-      if(melodyData[i]){
-        melodyData[i]=null;
-        s.classList.remove('active-m');
-      } else {
-        melodyData[i]={note:lastPlayedNote,type:activeInstrument};
-        s.classList.add('active-m');
-      }
-    };
-    m.appendChild(s);
-  }
-
-  ['k','s','h'].forEach(id=>{
-    const g=document.getElementById(id+'-grid');
-    for(let i=0;i<16;i++){
-      const s=document.createElement('div');
-      s.className='step';
-      s.onclick=()=>{
-        drumData[id][i]=!drumData[id][i];
-        s.classList.toggle('active-d');
-      };
-      g.appendChild(s);
+        ['k', 's', 'h'].forEach(id => {
+            const g = document.getElementById(`${id}-grid`);
+            for (let i = 0; i < 16; i++) {
+                const s = document.createElement('div');
+                s.className = 'step';
+                s.onclick = () => { drumData[id][i] = !drumData[id][i]; s.classList.toggle('active-drum'); };
+                g.appendChild(s);
+            }
+        });
     }
-  });
 
-  const scale=[
-   'C4','C#4','D4','D#4','E4','F4','F#4',
-   'G4','G#4','A4','A#4','B4','C5'
-  ];
+    function renderPiano() {
+        const scale = [{n:'C4',b:0},{n:'C#4',b:1},{n:'D4',b:0},{n:'D#4',b:1},{n:'E4',b:0},{n:'F4',b:0},{n:'F#4',b:1},{n:'G4',b:0},{n:'G#4',b:1},{n:'A4',b:0},{n:'A#4',b:1},{n:'B4',b:0},{n:'C5',b:0}];
+        const kb = document.getElementById('piano-kb');
+        let whites = 0;
+        scale.forEach(note => {
+            const k = document.createElement('div');
+            k.className = note.b ? 'black' : 'white';
+            if (note.b) k.style.left = `calc(${(whites / 8) * 100}% - 3.5%)`; else whites++;
 
-  const piano=document.getElementById('piano-keys');
-  let whites=0;
+            const down = (e) => {
+                e.preventDefault(); 
+                lastNote = note.n;
+                let freq = note.n;
+                if(selectedInst === 'bass') freq = Tone.Frequency(freq).transpose(-12).toNote();
+                synthEngines[selectedInst].triggerAttack(freq);
+                k.classList.add('pressed');
+                if (recording && playing) {
+                    melodyData[selectedInst][currentStep] = { note: note.n };
+                    const cell = document.getElementById(`grid-${selectedInst}`).children[currentStep];
+                    cell.innerText = note.n.replace(/[0-9]/, '');
+                    cell.className = `step active-${selectedInst}`;
+                }
+            };
+            const up = () => {
+                let freq = note.n;
+                if(selectedInst === 'bass') freq = Tone.Frequency(freq).transpose(-12).toNote();
+                synthEngines[selectedInst].triggerRelease(freq);
+                k.classList.remove('pressed');
+            };
+            k.onpointerdown = down; k.onpointerup = up; k.onpointerleave = up;
+            kb.appendChild(k);
+        });
+    }
 
-  scale.forEach(n=>{
-    const isBlack=n.includes('#');
-    const k=document.createElement('div');
-    k.className=isBlack?'black':'white';
+    function togglePlay() {
+        if (!initialized) return;
+        playing = !playing;
+        if (playing) { Tone.Transport.start(); } else { Tone.Transport.stop(); currentStep = 0; instruments.forEach(i => synthEngines[i].releaseAll()); }
+        document.getElementById('p-btn').classList.toggle('active', playing);
+        document.getElementById('p-btn').innerText = playing ? 'Stop' : 'Play';
+    }
 
-    if(isBlack)
-      k.style.left=`calc(${(whites/8)*100}% - 3%)`;
-    else whites++;
+    function toggleRec() { if (!playing) togglePlay(); recording = !recording; document.getElementById('r-btn').classList.toggle('active', recording); }
+    
+    function setInst(type, el) {
+        selectedInst = type;
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        el.classList.add('active');
+    }
 
-    const play=e=>{
-      e.preventDefault();
-      lastPlayedNote=n;
-      instruments[activeInstrument]?.triggerAttack(n);
-      k.classList.add('pressed');
+    function changeBPM(v) {
+        Tone.Transport.bpm.value = v;
+        document.getElementById('bpm-ui').innerText = v + ' BPM';
+    }
 
-      if(isRecording && isPlaying){
-        melodyData[currentStep]={note:n,type:activeInstrument};
-        document.getElementById('melody-grid')
-          .children[currentStep]
-          .classList.add('active-m');
-      }
-    };
-
-    const stop=()=>{
-      instruments[activeInstrument]?.triggerRelease(n);
-      k.classList.remove('pressed');
-    };
-
-    k.onpointerdown=play;
-    k.onpointerup=stop;
-    k.onpointerleave=stop;
-
-    piano.appendChild(k);
-  });
-}
-
-/* ---- CONTROLS ---- */
-function switchInst(t,el){
-  activeInstrument=t;
-  document.querySelectorAll('.tab')
-    .forEach(x=>x.classList.remove('active'));
-  el.classList.add('active');
-}
-
-function setTempo(v){
-  Tone.Transport.bpm.value=v;
-  bpm_val.innerText=v+' BPM';
-}
-
-function savePattern(){
-  Telegram.WebApp.showAlert("Сохранено (заглушка)");
-}
+    function clearAll() {
+        instruments.forEach(inst => melodyData[inst].fill(null));
+        Object.keys(drumData).forEach(d => drumData[d].fill(false));
+        document.querySelectorAll('.step').forEach(s => { s.className = 'step'; s.innerText = ''; });
+    }
 </script>
-
 </body>
 </html>
+
